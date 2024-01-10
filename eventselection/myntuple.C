@@ -52,6 +52,7 @@ void myntuple::Loop()
 	TH1F* myDiMuon1mass = new TH1F("myDiMuon1mass","myDiMuon1mass",80,2.7,3.5);
 	TH1F* myDiMuon2mass = new TH1F("myDiMuon2mass","myDiMuon2mass",80,2.7,3.5);
 	TH1F* myFourMuonmass = new TH1F("myFourMuonmass","myFourMuonmass",360,6,15);
+	TH1F* myFourMuonmassbetter = new TH1F("myFourMuonmassbetter","myFourMuonmassbetter",360,6,15);
 
 	const double MUON_MASS = 0.1056583745; //GeV
 	const double JPSI_MASS = 3.096900; //GeV
@@ -141,12 +142,27 @@ void myntuple::Loop()
 			float DiMuonMass1 = 0.; 
 			float DiMuonMass2 = 0.;
                         double m4Muon = 0.;
+                        double m4Muonbetter = 0.;
 			if (1
 					// soft muon: tracker muon + 1 hit in the muon system 
 					&& myNumPatSoftMuon >= 4 
 					// requiring all muons to come from the same vertex
 					&& (*MyFourMuonVtxCL)[myFourMuIdx] >= 0.005     
-					// Here add the selections! 
+					//---------------------------------------------------
+					// Here add the selections!
+					//---------------------------------------------------
+					
+					// add trigger selection
+					&& (TrigThreeMuonJpsi || TrigThreeMuonJpsi3p5mu2) 
+				
+					//The transverse momentum of each muon is greater than or equal to 2.0
+					&& ((fabs(rawMup4vect[0].Pt()) >= 2.0) && (fabs(rawMup4vect[1].Pt()) >= 2.0) && (fabs(rawMup4vect[2].Pt()) >= 2.0) && (fabs(rawMup4vect[3].Pt()) >= 2.0))
+
+					//The absolute value of the pseudo-rapidity of each muon is less than or equal to 2.4 
+					&& ((fabs(rawMup4vect[0].Eta()) <= 2.4) && (fabs(rawMup4vect[1].Eta()) <= 2.4) && (fabs(rawMup4vect[2].Eta()) <= 2.4) && (fabs(rawMup4vect[3].Eta()) <= 2.4))
+					
+					//The total charge of 4 muons is 0
+					&& ((fitMuCharge[0] + fitMuCharge[1] + fitMuCharge[2] + fitMuCharge[3]) == 0) 
 				) {
 				for (int mypidx = 0; mypidx < 3; mypidx++)  {
 					int muIdxp11, muIdxp12, muIdxp21, muIdxp22;
@@ -154,25 +170,37 @@ void myntuple::Loop()
 
 
 					if(1
+						//---------------------------------------------------
                                                 // Here, require the muon pairs to have muons with opposite charges
+						//---------------------------------------------------
+						&& (((fitMuCharge[muIdxp11] + fitMuCharge[muIdxp12]) == 0 && (fitMuCharge[muIdxp21] + fitMuCharge[muIdxp22]) == 0))
 					  )
 					{
+						//---------------------------------------------------
 						// Modify the DiMuonMass expression appropriatly. 
 						// Use the fitMup4vect and the muIdxpXY indexes defined above.
-						DiMuonMass1 = 0; 
-						DiMuonMass2 = 0;
+						//---------------------------------------------------
+						DiMuonMass1 = (fitMup4vect[muIdxp11] + fitMup4vect[muIdxp12]).M(); 
+						DiMuonMass2 = (fitMup4vect[muIdxp11] + fitMup4vect[muIdxp12]).M();
 						myDiMuon1mass->Fill(DiMuonMass1);
 						myDiMuon2mass->Fill(DiMuonMass2);
 
 						if (1
+								//---------------------------------------------------
 								// Here require that each DiMuonMass is in the appropriate mass range [2.95,3.25] GeV
-														   )
+								//---------------------------------------------------
+								&& (((fitMup4vect[muIdxp11] + fitMup4vect[muIdxp12]).M() >= 2.95) && ((fitMup4vect[muIdxp11] + fitMup4vect[muIdxp12]).M() <= 3.25)
+								     && ((fitMup4vect[muIdxp21] + fitMup4vect[muIdxp22]).M() >= 2.95) && ((fitMup4vect[muIdxp21] + fitMup4vect[muIdxp22]).M() <= 3.25))
+						   )
 						{
 							// calculate the 4 muon mass:  M(µ1µ2µ3µ4)-M(µ1µ2)-M(µ3µ4)+2*M(J/psi)  
-							m4Muon = 0;
-
+							m4Muon = (fitMup4vect[muIdxp11] + fitMup4vect[muIdxp12] +fitMup4vect[muIdxp21] + fitMup4vect[muIdxp22]).M();
 							myFourMuonmass->Fill(m4Muon);
 
+							// 4 muon mass with better resolution
+							m4Muonbetter = m4Muon - DiMuonMass1 - DiMuonMass2 + 2 * JPSI_MASS;  
+							myFourMuonmassbetter->Fill(m4Muonbetter);
+							
 							myoutputfile
 								<< std::fixed
 								<< m4Muon
