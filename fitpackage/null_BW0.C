@@ -124,10 +124,13 @@ void null_BW0(){
   bool MINOS = false;
   const int COUT_PRECISION = 6;
   double effectiveBins(double mth, double mLow, double mUp, double mBins);
-  const double MTH = 2 * 3.096900;
-  RooRealVar R_MTH("R_MTH", "R_MTH", MTH);
-  RooRealVar R_MUP("R_MUP", "R_MUP", 15.0);
+  const double MTH = 2 * 3.096900;  // 2 times mass of the Jpsi
+  RooRealVar R_MTH("R_MTH", "R_MTH", MTH);  // (constant) parameter for our model
+  RooRealVar R_MUP("R_MUP", "R_MUP", 15.0); // (constant) parameter for our model
   RooRealVar mx("mx", "mx", mxMin, mxMax);
+  
+  // Make an (unbinned) dataset for the data to which we will perform our fit 
+  // 	--> mx: the observable we are considering for our fit
   RooDataSet data = *RooDataSet::read("../fullrun2data/mJJDataFull6000_15000.txt", RooArgList(mx), "Q");
 
   // Here we introduce the normalization factors
@@ -142,6 +145,9 @@ void null_BW0(){
   RooRealVar numTh1("numTh1", "numTh1", numTh1Init, numTh1Min, numTh1Max);
   numTh1.setConstant(kFALSE);
 
+  //-----------------------------------------------------------------------------------------------------
+  //  Initialise parameters: SPS
+  //-----------------------------------------------------------------------------------------------------
 
   RooRealVar R_ZERO("R_ZERO", "R_ZERO", 0);
   RooRealVar R_ONE("R_ONE", "R_ONE", 1);
@@ -151,18 +157,30 @@ void null_BW0(){
   double p2Init = 9.78655e-02, p2Min = 0, p2Max = 1.0;
   RooRealVar p2("p2", "p2", p2Init, p2Min, p2Max);
   RooRealVar p3("p3", "p3", 0.53968);
+
+  // Initiate background fitting function with (initial) parameters
   MyMiptSpsSquare spsPdf("spsPdf", "spsPdf", mx, R_MTH, R_MUP,
       alpha, p1, p2, p3, R_ONE, R_ZERO);
 
+  //-----------------------------------------------------------------------------------------------------
+  //  Initialise parameters: DPS
+  //-----------------------------------------------------------------------------------------------------
+  
   RooRealVar dpsA("dpsA", "dpsA", 0.24358);
   RooRealVar dpsP0("dpsP0", "dpsP0", 0.23137);
   RooRealVar dpsP1("dpsP1", "dpsP1", -0.041952);
   RooRealVar dpsP2("dpsP2", "dpsP2", 0.012206);
+
+  // Initiate background fitting function with (initial) parameters
   MyNnuSpsSquare dpsPdf("dpsPdf", "dpsPdf", mx, R_MTH,
       dpsA, dpsP0, dpsP1, dpsP2, R_ZERO, R_ZERO, R_ONE, R_ZERO);
 
   mx.setBins(FFT_BINS, "cache");
   
+  //-----------------------------------------------------------------------------------------------------
+  //  Initialise parameters: Breit-Wigner 
+  //-----------------------------------------------------------------------------------------------------
+
   // Parameters for Breit-Wigner (BW) - see formula in Twiki
   // and note that some of the parameters are floating while others are fixed
   double massTh1Init = 6.33936e+00, massTh1Min = 6.20, massTh1Max = 6.50;
@@ -194,26 +212,35 @@ void null_BW0(){
   RooRealVar w_g2("w_g2", "w_g2", 0.010042);
   RooRealVar beta("beta", "beta", 0.50989);
 
+  // Initiate background fitting function with (initial) parameters
+  
   // Here we construct our function with the parameters defined above
   MyRelBWSquare Th1("Th1", "Th1", mx,
       massTh1, widthTh1, LTh1, dTh1, coefTh1, phiTh1);
   // We also need to take into account detector smearing which affect the resolution of the peak
   MiptDoubleGaussian2 resoTh1("resoTh1", "resoTh1", mx, R_ZERO, frac_g2,
       massTh1, R_MTH, w_g1, w_g2, beta);
+  
   // we do a numerical convolution as we do not have an analytical function
   // This is the final formula for the peak    
   RooFFTConvPdf Th1Reso("Th1Reso", "Th1Reso",
       mx, Th1, resoTh1);
 
+  //-----------------------------------------------------------------------------------------------------
+  // Fit background functions to the data 
+  //-----------------------------------------------------------------------------------------------------
+
   // dps and sps are backgrounds and Th1Reso is our signal
-  RooArgList pdfList(dpsPdf, spsPdf, Th1Reso);
-  // we want to normalize them 
+  RooArgList pdfList(dpsPdf, spsPdf, Th1Reso);  // ---> Create list of background functions to fit ti the data
+  
+  // we want to normalize the background functions we are using
   RooArgList numList(numDps, numSps, numTh1);
 
+  // create model given list of background functions to use and their given normalisation
   RooAddPdf model("model", "model", pdfList, numList);
 
   // here is where the actual fitting happens
-  RooFitResult *fitRes = model.fitTo(data, Save(kTRUE), 
+  RooFitResult *fitRes = model.fitTo(data, Save(kTRUE),    // MOST IMPORTANT LINE OF CODE!!! 
       Minos(MINOS), Strategy(STRATEGY), NumCPU(NCPU));
   double edm = fitRes->edm();
   double minNll = fitRes->minNll(); //Return minimized -log(L) value. 
