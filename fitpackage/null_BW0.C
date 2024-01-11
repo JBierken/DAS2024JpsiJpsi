@@ -156,6 +156,10 @@ void null_BW0(){
   double numTh4Init = 0.95000e+03, numTh4Min = 0, numTh4Max = 10000;
   RooRealVar numTh4("numTh4", "numTh4", numTh4Init, numTh4Min, numTh4Max);
   numTh4.setConstant(kFALSE);
+  // This will be the normalization of our little bump 
+  double numTh5Init = 0.45000e+03, numTh5Min = 0, numTh5Max = 10000;
+  RooRealVar numTh5("numTh5", "numTh5", numTh5Init, numTh5Min, numTh5Max);
+  numTh5.setConstant(kFALSE);
 
   //-----------------------------------------------------------------------------------------------------
   //  Initialise parameters: SPS
@@ -263,11 +267,6 @@ void null_BW0(){
   RooFFTConvPdf Th2Reso("Th2Reso", "Th2Reso",
       mx, Th2, resoTh2);
 
-  // make convolution of of Th1 and Th2
-  // This is the final formula for the peak    
-  RooFFTConvPdf Th1Th2Reso("Th1Th2Reso", "Th1Th2Reso",
-      mx, Th1Reso, Th2Reso);
-
   //  --> TH3: third peak
  
   // Parameters for Breit-Wigner (BW) - see formula in Twiki
@@ -314,16 +313,38 @@ void null_BW0(){
   RooFFTConvPdf Th4Reso("Th4Reso", "Th4Reso",
       mx, Th4, resoTh4);
 
+  //  --> TH5: little bump 
+ 
+  // Parameters for Breit-Wigner (BW) - see formula in Twiki
+  // and note that some of the parameters are floating while others are fixed
+  double massTh5Init = 9.6000e+00, massTh5Min = 9.20, massTh5Max = 10.00;		//----> NEEDS TO BE CHANGED!!
+  RooRealVar massTh5("massTh5", "massTh5", massTh5Init, massTh5Min, massTh5Max);
+  massTh5.setConstant(kFALSE); //m_0
+  double widthTh5Init = 1.0000e+00, widthTh5Min = 0.00, widthTh5Max = 2.00;		//----> NEEDS TO BE CHANGED!!
+  RooRealVar widthTh5("widthTh5", "widthTh5", widthTh5Init, widthTh5Min, widthTh5Max);
+  widthTh5.setConstant(kFALSE); //Gamma_0
+
+  // Initiate background fitting function with (initial) parameters
+  //    -->  Here we construct our function with the parameters defined above
+  MyRelBWSquare Th5("Th5", "Th5", mx,
+      massTh5, widthTh5, LTh1, dTh1, coefTh1, phiTh1);
+  // We also need to take into account detector smearing which affect the resolution of the peak
+  MiptDoubleGaussian2 resoTh5("resoTh5", "resoTh5", mx, R_ZERO, frac_g2,
+      massTh5, R_MTH, w_g1, w_g2, beta);
+  
+  // we do a numerical convolution as we do not have an analytical function
+  RooFFTConvPdf Th5Reso("Th5Reso", "Th5Reso",
+      mx, Th5, resoTh5);
 
   //-----------------------------------------------------------------------------------------------------
   // Fit background functions to the data 
   //-----------------------------------------------------------------------------------------------------
 
   // dps and sps are backgrounds and Th1Reso is our signal
-  RooArgList pdfList(dpsPdf, spsPdf, Th1Reso, Th2Reso, Th3Reso, Th4Reso);  // ---> Create list of background functions to fit ti the data
+  RooArgList pdfList(dpsPdf, spsPdf, Th1Reso, Th2Reso, Th3Reso, Th4Reso, Th5Reso);  // ---> Create list of background functions to fit ti the data
   
   // we want to normalize the background functions we are using
-  RooArgList numList(numDps, numSps, numTh1, numTh2, numTh3, numTh4);
+  RooArgList numList(numDps, numSps, numTh1, numTh2, numTh3, numTh4, numTh5);
 
   // create model given list of background functions to use and their given normalisation
   RooAddPdf model("model", "model", pdfList, numList);
@@ -371,6 +392,7 @@ void null_BW0(){
   model.plotOn(frame, Components(Th2Reso), Name("Th2"), LineColor(kRed), LineStyle(kDotted));
   model.plotOn(frame, Components(Th3Reso), Name("Th3"), LineColor(kRed), LineStyle(kDotted));
   model.plotOn(frame, Components(Th4Reso), Name("Th4"), LineColor(kRed), LineStyle(kDotted));
+  model.plotOn(frame, Components(Th5Reso), Name("Th5"), LineColor(kOrange), LineStyle(kDotted));
 
   frame->GetXaxis()->SetTitle(XTitle.Data());
   frame->GetXaxis()->SetLabelColor(0, 0);
@@ -384,6 +406,7 @@ void null_BW0(){
   leg.AddEntry(frame->findObject("Th2"), "BW1", "l");
   leg.AddEntry(frame->findObject("Th3"), "BW2", "l");
   leg.AddEntry(frame->findObject("Th4"), "BW3", "l");
+  leg.AddEntry(frame->findObject("Th5"), "BW4", "l");
   leg.AddEntry(frame->findObject("Sps"), "SPS", "l");
   leg.AddEntry(frame->findObject("Dps"), "DPS", "l");
 
@@ -419,7 +442,7 @@ void null_BW0(){
   pad12.cd();
   pullFrame->Draw();
   c1.Update();
-  c1.SaveAs("figure/fit_null_BW3.pdf");
+  c1.SaveAs("figure/fit_null_BW4.pdf");
       
   fitRes->Print();
   fitRes->Delete();
