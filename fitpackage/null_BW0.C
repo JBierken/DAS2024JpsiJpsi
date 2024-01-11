@@ -144,6 +144,18 @@ void null_BW0(){
   double numTh1Init = 1.27056e+03, numTh1Min = 0, numTh1Max = 10000;
   RooRealVar numTh1("numTh1", "numTh1", numTh1Init, numTh1Min, numTh1Max);
   numTh1.setConstant(kFALSE);
+  // This will be the normalization of our second peak
+  double numTh2Init = 1.50000e+03, numTh2Min = 0, numTh2Max = 10000;
+  RooRealVar numTh2("numTh2", "numTh2", numTh2Init, numTh2Min, numTh2Max);
+  numTh2.setConstant(kFALSE);
+  // This will be the normalization of our third peak
+  double numTh3Init = 1.40000e+03, numTh3Min = 0, numTh3Max = 10000;
+  RooRealVar numTh3("numTh3", "numTh3", numTh3Init, numTh3Min, numTh3Max);
+  numTh2.setConstant(kFALSE);
+  // This will be the normalization of our third peak
+  double numTh4Init = 0.95000e+03, numTh4Min = 0, numTh4Max = 10000;
+  RooRealVar numTh4("numTh4", "numTh4", numTh4Init, numTh4Min, numTh4Max);
+  numTh4.setConstant(kFALSE);
 
   //-----------------------------------------------------------------------------------------------------
   //  Initialise parameters: SPS
@@ -213,8 +225,7 @@ void null_BW0(){
   RooRealVar beta("beta", "beta", 0.50989);
 
   // Initiate background fitting function with (initial) parameters
-  
-  // Here we construct our function with the parameters defined above
+  //    ---> Here we construct our function with the parameters defined above
   MyRelBWSquare Th1("Th1", "Th1", mx,
       massTh1, widthTh1, LTh1, dTh1, coefTh1, phiTh1);
   // We also need to take into account detector smearing which affect the resolution of the peak
@@ -227,14 +238,92 @@ void null_BW0(){
       mx, Th1, resoTh1);
 
   //-----------------------------------------------------------------------------------------------------
+  //  Initialise parameters: BW for furhter peaks 
+  //-----------------------------------------------------------------------------------------------------
+  //  --> TH2:  secondpeak
+ 
+  // Parameters for Breit-Wigner (BW) - see formula in Twiki
+  // and note that some of the parameters are floating while others are fixed
+  double massTh2Init = 6.7000e+00, massTh2Min = 6.55, massTh2Max = 6.85;		//----> NEEDS TO BE CHANGED!!
+  RooRealVar massTh2("massTh2", "massTh2", massTh2Init, massTh2Min, massTh2Max);
+  massTh2.setConstant(kFALSE); //m_0
+  double widthTh2Init = 9.6300e-01, widthTh2Min = 0.00, widthTh2Max = 1.50;		//----> NEEDS TO BE CHANGED!!
+  RooRealVar widthTh2("widthTh2", "widthTh2", widthTh2Init, widthTh2Min, widthTh2Max);
+  widthTh2.setConstant(kFALSE); //Gamma_0
+
+  // Initiate background fitting function with (initial) parameters
+  //    -->  Here we construct our function with the parameters defined above
+  MyRelBWSquare Th2("Th2", "Th2", mx,
+      massTh2, widthTh2, LTh1, dTh1, coefTh1, phiTh1);
+  // We also need to take into account detector smearing which affect the resolution of the peak
+  MiptDoubleGaussian2 resoTh2("resoTh2", "resoTh2", mx, R_ZERO, frac_g2,
+      massTh2, R_MTH, w_g1, w_g2, beta);
+  
+  // we do a numerical convolution as we do not have an analytical function
+  RooFFTConvPdf Th2Reso("Th2Reso", "Th2Reso",
+      mx, Th2, resoTh2);
+
+  // make convolution of of Th1 and Th2
+  // This is the final formula for the peak    
+  RooFFTConvPdf Th1Th2Reso("Th1Th2Reso", "Th1Th2Reso",
+      mx, Th1Reso, Th2Reso);
+
+  //  --> TH3: third peak
+ 
+  // Parameters for Breit-Wigner (BW) - see formula in Twiki
+  // and note that some of the parameters are floating while others are fixed
+  double massTh3Init = 7.0000e+00, massTh3Min = 6.85, massTh3Max = 7.15;		//----> NEEDS TO BE CHANGED!!
+  RooRealVar massTh3("massTh3", "massTh3", massTh3Init, massTh3Min, massTh3Max);
+  massTh3.setConstant(kFALSE); //m_0
+  double widthTh3Init = 9.6077e-01, widthTh3Min = 0.00, widthTh3Max = 1.50;		//----> NEEDS TO BE CHANGED!!
+  RooRealVar widthTh3("widthTh3", "widthTh3", widthTh3Init, widthTh3Min, widthTh3Max);
+  widthTh3.setConstant(kFALSE); //Gamma_0
+
+  // Initiate background fitting function with (initial) parameters
+  //    -->  Here we construct our function with the parameters defined above
+  MyRelBWSquare Th3("Th3", "Th3", mx,
+      massTh3, widthTh3, LTh1, dTh1, coefTh1, phiTh1);
+  // We also need to take into account detector smearing which affect the resolution of the peak
+  MiptDoubleGaussian2 resoTh3("resoTh3", "resoTh3", mx, R_ZERO, frac_g2,
+      massTh3, R_MTH, w_g1, w_g2, beta);
+  
+  // we do a numerical convolution as we do not have an analytical function
+  RooFFTConvPdf Th3Reso("Th3Reso", "Th3Reso",
+      mx, Th3, resoTh3);
+  
+  //  --> TH4: fourth peak
+ 
+  // Parameters for Breit-Wigner (BW) - see formula in Twiki
+  // and note that some of the parameters are floating while others are fixed
+  double massTh4Init = 7.4000e+00, massTh4Min = 7.25, massTh4Max = 7.55;		//----> NEEDS TO BE CHANGED!!
+  RooRealVar massTh4("massTh4", "massTh4", massTh4Init, massTh4Min, massTh4Max);
+  massTh4.setConstant(kFALSE); //m_0
+  double widthTh4Init = 9.6077e-01, widthTh4Min = 0.00, widthTh4Max = 1.50;		//----> NEEDS TO BE CHANGED!!
+  RooRealVar widthTh4("widthTh4", "widthTh4", widthTh4Init, widthTh4Min, widthTh4Max);
+  widthTh4.setConstant(kFALSE); //Gamma_0
+
+  // Initiate background fitting function with (initial) parameters
+  //    -->  Here we construct our function with the parameters defined above
+  MyRelBWSquare Th4("Th4", "Th4", mx,
+      massTh4, widthTh4, LTh1, dTh1, coefTh1, phiTh1);
+  // We also need to take into account detector smearing which affect the resolution of the peak
+  MiptDoubleGaussian2 resoTh4("resoTh4", "resoTh4", mx, R_ZERO, frac_g2,
+      massTh4, R_MTH, w_g1, w_g2, beta);
+  
+  // we do a numerical convolution as we do not have an analytical function
+  RooFFTConvPdf Th4Reso("Th4Reso", "Th4Reso",
+      mx, Th4, resoTh4);
+
+
+  //-----------------------------------------------------------------------------------------------------
   // Fit background functions to the data 
   //-----------------------------------------------------------------------------------------------------
 
   // dps and sps are backgrounds and Th1Reso is our signal
-  RooArgList pdfList(dpsPdf, spsPdf, Th1Reso);  // ---> Create list of background functions to fit ti the data
+  RooArgList pdfList(dpsPdf, spsPdf, Th1Reso, Th2Reso, Th3Reso, Th4Reso);  // ---> Create list of background functions to fit ti the data
   
   // we want to normalize the background functions we are using
-  RooArgList numList(numDps, numSps, numTh1);
+  RooArgList numList(numDps, numSps, numTh1, numTh2, numTh3, numTh4);
 
   // create model given list of background functions to use and their given normalisation
   RooAddPdf model("model", "model", pdfList, numList);
@@ -279,6 +368,9 @@ void null_BW0(){
   model.plotOn(frame, Components(dpsPdf), Name("Dps"), LineColor(kGreen), LineStyle(1));
   model.plotOn(frame, Components(spsPdf), Name("Sps"), LineColor(kViolet), LineStyle(1));
   model.plotOn(frame, Components(Th1Reso), Name("Th1"), LineColor(kMagenta), LineStyle(kDashDotted));
+  model.plotOn(frame, Components(Th2Reso), Name("Th2"), LineColor(kMagenta), LineStyle(kDotted));
+  model.plotOn(frame, Components(Th3Reso), Name("Th2"), LineColor(kMagenta), LineStyle(kDotted));
+  model.plotOn(frame, Components(Th4Reso), Name("Th4"), LineColor(kMagenta), LineStyle(kDotted));
 
   frame->GetXaxis()->SetTitle(XTitle.Data());
   frame->GetXaxis()->SetLabelColor(0, 0);
@@ -289,6 +381,9 @@ void null_BW0(){
   leg.AddEntry(frame->findObject("data"), "Data", "pe");
   leg.AddEntry(frame->findObject("model"), "Fit", "l");
   leg.AddEntry(frame->findObject("Th1"), "BW0", "l");
+  leg.AddEntry(frame->findObject("Th2"), "BW1", "l");
+  leg.AddEntry(frame->findObject("Th3"), "BW2", "l");
+  leg.AddEntry(frame->findObject("Th4"), "BW4", "l");
   leg.AddEntry(frame->findObject("Sps"), "SPS", "l");
   leg.AddEntry(frame->findObject("Dps"), "DPS", "l");
 
@@ -324,7 +419,7 @@ void null_BW0(){
   pad12.cd();
   pullFrame->Draw();
   c1.Update();
-  c1.SaveAs("figure/fit_null_BW0.pdf");
+  c1.SaveAs("figure/fit_null_BW3.pdf");
       
   fitRes->Print();
   fitRes->Delete();
