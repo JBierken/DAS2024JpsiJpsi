@@ -368,9 +368,9 @@ void null_BW0(){
   model.plotOn(frame, Components(dpsPdf), Name("Dps"), LineColor(kGreen), LineStyle(1));
   model.plotOn(frame, Components(spsPdf), Name("Sps"), LineColor(kViolet), LineStyle(1));
   model.plotOn(frame, Components(Th1Reso), Name("Th1"), LineColor(kMagenta), LineStyle(kDashDotted));
-  model.plotOn(frame, Components(Th2Reso), Name("Th2"), LineColor(kMagenta), LineStyle(kDotted));
-  model.plotOn(frame, Components(Th3Reso), Name("Th2"), LineColor(kMagenta), LineStyle(kDotted));
-  model.plotOn(frame, Components(Th4Reso), Name("Th4"), LineColor(kMagenta), LineStyle(kDotted));
+  model.plotOn(frame, Components(Th2Reso), Name("Th2"), LineColor(kRed), LineStyle(kDotted));
+  model.plotOn(frame, Components(Th3Reso), Name("Th3"), LineColor(kRed), LineStyle(kDotted));
+  model.plotOn(frame, Components(Th4Reso), Name("Th4"), LineColor(kRed), LineStyle(kDotted));
 
   frame->GetXaxis()->SetTitle(XTitle.Data());
   frame->GetXaxis()->SetLabelColor(0, 0);
@@ -383,7 +383,7 @@ void null_BW0(){
   leg.AddEntry(frame->findObject("Th1"), "BW0", "l");
   leg.AddEntry(frame->findObject("Th2"), "BW1", "l");
   leg.AddEntry(frame->findObject("Th3"), "BW2", "l");
-  leg.AddEntry(frame->findObject("Th4"), "BW4", "l");
+  leg.AddEntry(frame->findObject("Th4"), "BW3", "l");
   leg.AddEntry(frame->findObject("Sps"), "SPS", "l");
   leg.AddEntry(frame->findObject("Dps"), "DPS", "l");
 
